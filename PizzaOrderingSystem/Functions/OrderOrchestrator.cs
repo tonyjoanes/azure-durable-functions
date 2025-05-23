@@ -18,7 +18,19 @@ namespace AzureDurableFunctions.PizzaOrderingSystem.Functions
             // Step 1: Submit the order
             var orderId = await context.CallActivityAsync<string>("SubmitOrder", "Pizza Order");
 
-            // Step 2: Process payment
+            // Step 2: Wait for order confirmation
+            log.LogInformation($"Waiting for confirmation of order {orderId}.");
+            var confirmationResult = await context.WaitForExternalEvent<bool>("OrderConfirmation");
+
+            if (!confirmationResult)
+            {
+                log.LogInformation($"Order {orderId} was rejected.");
+                return $"Order {orderId} was rejected by the user.";
+            }
+
+            log.LogInformation($"Order {orderId} was confirmed. Proceeding with payment.");
+
+            // Step 3: Process payment
             var paymentResult = await context.CallActivityAsync<bool>("ProcessPayment", orderId);
             if (!paymentResult)
             {
@@ -26,19 +38,19 @@ namespace AzureDurableFunctions.PizzaOrderingSystem.Functions
                 return $"Order {orderId} failed due to payment issues.";
             }
 
-            // Step 3: Prepare the pizza in the kitchen
+            // Step 4: Prepare the pizza in the kitchen
             var kitchenResult = await context.CallActivityAsync<string>("PreparePizza", orderId);
             log.LogInformation($"Kitchen result: {kitchenResult}");
 
-            // Step 4: Update delivery status
+            // Step 5: Update delivery status
             var deliveryStatus = await context.CallActivityAsync<string>("UpdateDeliveryStatus", orderId);
             log.LogInformation($"Delivery status: {deliveryStatus}");
 
-            // Step 5: Complete the order
+            // Step 6: Complete the order
             var completionResult = await context.CallActivityAsync<string>("CompleteOrder", orderId);
             log.LogInformation($"Order completion: {completionResult}");
 
             return $"Order {orderId} completed successfully!";
         }
     }
-} 
+}

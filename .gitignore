@@ -4,6 +4,13 @@
 # Azure Functions localsettings file
 local.settings.json
 
+# Azurite files
+__blobstorage__
+__queuestorage__
+__azurite_db*__.json
+__azurite_db*__.ldb
+__azurite_db*__.log
+
 # User-specific files
 *.suo
 *.user
@@ -262,3 +269,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+azurite/__azurite_db_blob__.json
+azurite/__blobstorage__/6ce3b07e-6ea4-42d8-86f9-800a85169fa5
