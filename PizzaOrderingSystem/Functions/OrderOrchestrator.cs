@@ -4,7 +4,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 
-namespace AzureDurableFunctions.PizzaOrderingSystem.Functions
+namespace azure_durable_functions.PizzaOrderingSystem.Functions
 {
     public static class OrderOrchestrator
     {

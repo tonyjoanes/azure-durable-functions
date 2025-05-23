@@ -5,7 +5,8 @@ const config = {
     order: {
       create: '/api/OrderOrchestrator_HttpStart',
       status: (orderId: string) => `/api/OrderStatus/${orderId}`,
-      confirm: (instanceId: string) => `/api/ConfirmOrder?instanceId=${instanceId}`
+      confirm: (instanceId: string) => `/api/ConfirmOrder?instanceId=${instanceId}`,
+      pending: '/api/orders/pending'
     }
   }
 };

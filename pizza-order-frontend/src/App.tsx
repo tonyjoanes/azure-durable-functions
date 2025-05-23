@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { ChakraProvider, Box, Container, VStack, Heading } from '@chakra-ui/react';
 import NewOrder from './components/NewOrder';
 import OrderStatus from './components/OrderStatus';
+import PendingOrders from './components/PendingOrders';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
                 <VStack spacing={4} align="stretch">
                   <Link to="/">Place New Order</Link>
                   <Link to="/status">View Order Status</Link>
+                  <Link to="/pending">Pending Orders (Admin)</Link>
                 </VStack>
               </Box>
 
@@ -26,6 +28,7 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<NewOrder />} />
                   <Route path="/status" element={<OrderStatus />} />
+                  <Route path="/pending" element={<PendingOrders />} />
                 </Routes>
               </Box>
             </VStack>
