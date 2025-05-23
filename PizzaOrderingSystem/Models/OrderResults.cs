@@ -49,6 +49,8 @@ namespace AzureDurableFunctions.PizzaOrderingSystem.Models
     public sealed record OrderError : OrderResult
     {
         public string ErrorMessage { get; init; } = string.Empty;
+
+        [JsonIgnore]
         public Exception? Exception { get; init; }
         public override string ResultType => nameof(OrderError);
     }
@@ -86,18 +88,68 @@ namespace AzureDurableFunctions.PizzaOrderingSystem.Models
         {
             var jo = JObject.Load(reader);
             var resultType = jo["ResultType"]?.Value<string>();
+            var orderId = jo["OrderId"]?.Value<string>() ?? string.Empty;
+            var timestamp = jo["Timestamp"]?.Value<DateTime>() ?? DateTime.UtcNow;
 
             return resultType switch
             {
-                nameof(OrderSubmitted) => jo.ToObject<OrderSubmitted>(serializer),
-                nameof(PaymentProcessed) => jo.ToObject<PaymentProcessed>(serializer),
-                nameof(PizzaPrepared) => jo.ToObject<PizzaPrepared>(serializer),
-                nameof(DeliveryUpdated) => jo.ToObject<DeliveryUpdated>(serializer),
-                nameof(OrderCompleted) => jo.ToObject<OrderCompleted>(serializer),
-                nameof(OrderError) => jo.ToObject<OrderError>(serializer),
-                nameof(PaymentError) => jo.ToObject<PaymentError>(serializer),
-                nameof(PreparationError) => jo.ToObject<PreparationError>(serializer),
-                nameof(DeliveryError) => jo.ToObject<DeliveryError>(serializer),
+                nameof(OrderSubmitted) => new OrderSubmitted
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    Message = jo["Message"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(PaymentProcessed) => new PaymentProcessed
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    Amount = jo["Amount"]?.Value<decimal>() ?? 0m,
+                },
+                nameof(PizzaPrepared) => new PizzaPrepared
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    PreparationDetails = jo["PreparationDetails"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(DeliveryUpdated) => new DeliveryUpdated
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    Status = jo["Status"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(OrderCompleted) => new OrderCompleted
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    CompletionMessage = jo["CompletionMessage"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(OrderError) => new OrderError
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    ErrorMessage = jo["ErrorMessage"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(PaymentError) => new PaymentError
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    ErrorMessage = jo["ErrorMessage"]?.Value<string>() ?? string.Empty,
+                    AttemptedAmount = jo["AttemptedAmount"]?.Value<decimal>() ?? 0m,
+                },
+                nameof(PreparationError) => new PreparationError
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    ErrorMessage = jo["ErrorMessage"]?.Value<string>() ?? string.Empty,
+                    FailedStep = jo["FailedStep"]?.Value<string>() ?? string.Empty,
+                },
+                nameof(DeliveryError) => new DeliveryError
+                {
+                    OrderId = orderId,
+                    Timestamp = timestamp,
+                    ErrorMessage = jo["ErrorMessage"]?.Value<string>() ?? string.Empty,
+                    CurrentLocation = jo["CurrentLocation"]?.Value<string>() ?? string.Empty,
+                },
                 _ => throw new JsonSerializationException($"Unknown result type: {resultType}"),
             };
         }
@@ -108,7 +160,53 @@ namespace AzureDurableFunctions.PizzaOrderingSystem.Models
             JsonSerializer serializer
         )
         {
-            serializer.Serialize(writer, value);
+            var settings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+            };
+            var jsonSerializer = JsonSerializer.Create(settings);
+
+            var jo = new JObject();
+            jo["ResultType"] = value.ResultType;
+            jo["OrderId"] = value.OrderId;
+            jo["Timestamp"] = value.Timestamp;
+
+            switch (value)
+            {
+                case OrderSubmitted s:
+                    jo["Message"] = s.Message;
+                    break;
+                case PaymentProcessed p:
+                    jo["Amount"] = p.Amount;
+                    break;
+                case PizzaPrepared p:
+                    jo["PreparationDetails"] = p.PreparationDetails;
+                    break;
+                case DeliveryUpdated d:
+                    jo["Status"] = d.Status;
+                    break;
+                case OrderCompleted c:
+                    jo["CompletionMessage"] = c.CompletionMessage;
+                    break;
+                case OrderError e:
+                    jo["ErrorMessage"] = e.ErrorMessage;
+                    break;
+                case PaymentError e:
+                    jo["ErrorMessage"] = e.ErrorMessage;
+                    jo["AttemptedAmount"] = e.AttemptedAmount;
+                    break;
+                case PreparationError e:
+                    jo["ErrorMessage"] = e.ErrorMessage;
+                    jo["FailedStep"] = e.FailedStep;
+                    break;
+                case DeliveryError e:
+                    jo["ErrorMessage"] = e.ErrorMessage;
+                    jo["CurrentLocation"] = e.CurrentLocation;
+                    break;
+            }
+
+            jo.WriteTo(writer);
         }
     }
 
