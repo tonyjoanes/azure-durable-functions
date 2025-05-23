@@ -5,17 +5,26 @@
             "samplingSettings": {
                 "isEnabled": true,
                 "excludedTypes": "Request"
-            },
-            "enableLiveMetricsFilters": true
+            }
         }
     },
-    "cors": {
-        "allowedOrigins": [
-            "http://localhost:3000"
-        ],
-        "allowedMethods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allowedHeaders": ["Content-Type", "Authorization", "Accept"],
-        "maxAge": 3600,
-        "supportCredentials": true
+    "extensions": {
+        "http": {
+            "routePrefix": "api",
+            "customHeaders": {
+                "X-Content-Type-Options": "nosniff"
+            },
+            "dynamicThrottlesEnabled": false,
+            "hsts": {
+                "isEnabled": false
+            }
+        },
+        "durableTask": {
+            "hubName": "PizzaOrchestration"
+        }
+    },
+    "functionTimeout": "00:05:00",
+    "host": {
+        "id": "pizza-functions"
     }
 }

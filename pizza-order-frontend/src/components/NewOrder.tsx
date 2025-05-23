@@ -43,7 +43,9 @@ const NewOrder: React.FC = () => {
     try {
       const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.health}`, {
         method: 'GET',
-        ...config.corsOptions,
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       setBackendAvailable(response.ok);
       if (response.ok) {
@@ -74,7 +76,10 @@ const NewOrder: React.FC = () => {
     try {
       const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.order.create}`, {
         method: 'POST',
-        ...config.corsOptions,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(order),
       });
 
@@ -123,7 +128,7 @@ const NewOrder: React.FC = () => {
           Backend Server Unavailable
         </AlertTitle>
         <AlertDescription maxWidth="sm">
-          Unable to connect to the backend server at {config.apiBaseUrl}. Please make sure the Azure Functions backend is running.
+          Unable to connect to the backend server. Please make sure the Azure Functions backend is running.
           {retryCount < MAX_RETRIES ? (
             <Text mt={2}>Retrying connection... (Attempt {retryCount + 1} of {MAX_RETRIES})</Text>
           ) : (

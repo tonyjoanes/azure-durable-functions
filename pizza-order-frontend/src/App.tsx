@@ -4,7 +4,7 @@ import { ChakraProvider, Box, Container, VStack, Heading } from '@chakra-ui/reac
 import NewOrder from './components/NewOrder';
 import OrderStatus from './components/OrderStatus';
 
-function App() {
+const App: React.FC = () => {
   return (
     <ChakraProvider>
       <Router>
@@ -34,6 +34,6 @@ function App() {
       </Router>
     </ChakraProvider>
   );
-}
+};
 
 export default App; 

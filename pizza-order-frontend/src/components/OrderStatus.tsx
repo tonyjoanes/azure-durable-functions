@@ -1,135 +1,201 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  VStack,
   Text,
-  Input,
-  Button,
-  useToast,
+  VStack,
+  Heading,
   Badge,
-  Card,
-  CardBody,
-  Stack,
-  StackDivider,
+  useToast,
+  Button,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
 import config from '../config';
 
 interface OrderStatus {
   id: string;
   status: string;
-  details: {
-    size: string;
-    toppings: string[];
-    address: string;
-    phone: string;
-  };
+  size: string;
+  toppings: string[];
+  address: string;
+  phone: string;
+  timestamp: string;
 }
 
 const OrderStatus: React.FC = () => {
-  const [orderId, setOrderId] = useState('');
-  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
+  const [orderId, setOrderId] = useState<string>('');
+  const [order, setOrder] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const toast = useToast();
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return 'green';
-      case 'in progress':
-        return 'blue';
-      case 'failed':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const fetchOrderStatus = async () => {
-    if (!orderId) {
-      toast({
-        title: 'Error',
-        description: 'Please enter an order ID',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+  const checkOrderStatus = async () => {
+    if (!orderId) return;
 
     setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(
-        `${config.apiBaseUrl}${config.apiEndpoints.order.status(orderId)}`,
-        {
-          method: 'GET',
-          ...config.corsOptions,
+      const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.order.status(orderId)}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
         }
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      setOrderStatus(data);
+      setOrder(data);
     } catch (error) {
-      console.error('Error fetching order status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch order status',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      console.error('Error checking order status:', error);
+      setError(error instanceof Error ? error.message : 'Failed to check order status');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleConfirmOrder = async () => {
+    if (!order) return;
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.order.confirm(order.id)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      toast({
+        title: 'Order Confirmed',
+        description: 'Your order has been confirmed successfully!',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Refresh order status
+      checkOrderStatus();
+    } catch (error) {
+      console.error('Error confirming order:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to confirm order',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'yellow';
+      case 'confirmed':
+        return 'green';
+      case 'preparing':
+        return 'blue';
+      case 'out_for_delivery':
+        return 'purple';
+      case 'delivered':
+        return 'green';
+      default:
+        return 'gray';
+    }
+  };
+
   return (
     <Box>
-      <Text fontSize="2xl" mb={6}>Track Order Status</Text>
+      <Heading size="lg" mb={6}>Check Order Status</Heading>
       
-      <VStack spacing={4} align="stretch" mb={8}>
-        <Input
-          placeholder="Enter Order ID"
-          value={orderId}
-          onChange={(e) => setOrderId(e.target.value)}
-        />
-        <Button
-          colorScheme="blue"
-          onClick={fetchOrderStatus}
-          isLoading={loading}
-          loadingText="Fetching Status..."
-        >
-          Track Order
-        </Button>
-      </VStack>
+      <VStack spacing={4} align="stretch">
+        <Box>
+          <Text mb={2}>Enter Order ID:</Text>
+          <input
+            type="text"
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
+            placeholder="Enter your order ID"
+            style={{
+              padding: '8px',
+              width: '100%',
+              marginBottom: '16px',
+              border: '1px solid #ccc',
+              borderRadius: '4px'
+            }}
+          />
+          <Button
+            colorScheme="blue"
+            onClick={checkOrderStatus}
+            isLoading={loading}
+            loadingText="Checking..."
+          >
+            Check Status
+          </Button>
+        </Box>
 
-      {orderStatus && (
-        <Card>
-          <CardBody>
-            <Stack divider={<StackDivider />} spacing={4}>
+        {error && (
+          <Alert status="error">
+            <AlertIcon />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {order && (
+          <Box p={4} borderWidth={1} borderRadius="md">
+            <VStack align="stretch" spacing={3}>
               <Box>
-                <Text fontSize="lg" fontWeight="bold">
-                  Order #{orderStatus.id}
-                </Text>
-                <Badge colorScheme={getStatusColor(orderStatus.status)}>
-                  {orderStatus.status}
+                <Text fontWeight="bold">Order ID:</Text>
+                <Text>{order.id}</Text>
+              </Box>
+              
+              <Box>
+                <Text fontWeight="bold">Status:</Text>
+                <Badge colorScheme={getStatusColor(order.status)}>
+                  {order.status}
                 </Badge>
               </Box>
 
               <Box>
-                <Text fontWeight="bold">Order Details</Text>
-                <Text>Size: {orderStatus.details.size}</Text>
-                <Text>Toppings: {orderStatus.details.toppings.join(', ')}</Text>
-                <Text>Delivery Address: {orderStatus.details.address}</Text>
-                <Text>Phone: {orderStatus.details.phone}</Text>
+                <Text fontWeight="bold">Pizza Details:</Text>
+                <Text>Size: {order.size}</Text>
+                <Text>Toppings: {order.toppings.join(', ')}</Text>
               </Box>
-            </Stack>
-          </CardBody>
-        </Card>
-      )}
+
+              <Box>
+                <Text fontWeight="bold">Delivery Details:</Text>
+                <Text>Address: {order.address}</Text>
+                <Text>Phone: {order.phone}</Text>
+              </Box>
+
+              <Box>
+                <Text fontWeight="bold">Order Time:</Text>
+                <Text>{new Date(order.timestamp).toLocaleString()}</Text>
+              </Box>
+
+              {order.status === 'pending' && (
+                <Button
+                  colorScheme="green"
+                  onClick={handleConfirmOrder}
+                >
+                  Confirm Order
+                </Button>
+              )}
+            </VStack>
+          </Box>
+        )}
+      </VStack>
     </Box>
   );
 };

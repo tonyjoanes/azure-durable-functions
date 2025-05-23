@@ -1,5 +1,5 @@
 const config = {
-  apiBaseUrl: process.env.REACT_APP_API_BASE_URL || 'http://localhost:7071',
+  apiBaseUrl: 'http://localhost:7071',  // Direct to Azure Functions
   apiEndpoints: {
     health: '/api/health',
     order: {
@@ -7,14 +7,6 @@ const config = {
       status: (orderId: string) => `/api/OrderStatus/${orderId}`,
       confirm: (instanceId: string) => `/api/ConfirmOrder?instanceId=${instanceId}`
     }
-  },
-  corsOptions: {
-    credentials: 'include' as RequestCredentials,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    mode: 'cors' as RequestMode
   }
 };
 
