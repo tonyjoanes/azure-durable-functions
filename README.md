@@ -1,5 +1,10 @@
 # Azure Durable Functions - Pizza Ordering System
 
+[![Build Status](https://github.com/tonyjoanes/azure-durable-functions/actions/workflows/build.yml/badge.svg)](https://github.com/tonyjoanes/azure-durable-functions/actions/workflows/build.yml)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![Node.js Version](https://img.shields.io/badge/Node.js-18.x-green.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 This project demonstrates the use of Azure Durable Functions by implementing a pizza ordering system. The system showcases various features of Durable Functions including:
 - Orchestration functions
 - Activity functions
