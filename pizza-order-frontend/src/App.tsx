@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { ChakraProvider, Box, Container, Flex, Heading, Text, Button, useColorModeValue } from '@chakra-ui/react';
+import { ChakraProvider, Box, Container, Flex, Heading, Text, Button, useColorModeValue, Grid, GridItem, Link as ChakraLink } from '@chakra-ui/react';
+import { PhoneIcon, TimeIcon, AtSignIcon } from '@chakra-ui/icons';
 import NewOrder from './components/NewOrder';
 import OrderStatus from './components/OrderStatus';
 import PendingOrders from './components/PendingOrders';
@@ -12,7 +13,7 @@ const App: React.FC = () => {
   return (
     <ChakraProvider>
       <Router>
-        <Box minH="100vh" bg="gray.50">
+        <Box minH="100vh" bg="gray.50" display="flex" flexDirection="column">
           {/* Header */}
           <Box as="header" bg="red.600" color="white" py={4} shadow="md">
             <Container maxW="container.xl">
@@ -61,7 +62,7 @@ const App: React.FC = () => {
           </Box>
 
           {/* Main Content */}
-          <Container maxW="container.xl" py={8}>
+          <Container maxW="container.xl" py={8} flex="1">
             <Box bg={bgColor} p={6} borderRadius="md" shadow="sm">
               <Routes>
                 <Route path="/" element={<NewOrder />} />
@@ -70,6 +71,58 @@ const App: React.FC = () => {
               </Routes>
             </Box>
           </Container>
+
+          {/* Footer */}
+          <Box as="footer" bg="gray.800" color="white" py={12} mt="auto">
+            <Container maxW="container.xl">
+              <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={8}>
+                {/* Contact Information */}
+                <GridItem>
+                  <Heading size="md" mb={4} color="red.400">Contact Us</Heading>
+                  <Flex direction="column" gap={3}>
+                    <Flex align="center" gap={2}>
+                      <PhoneIcon boxSize={5} />
+                      <Text>(555) 123-4567</Text>
+                    </Flex>
+                    <Flex align="center" gap={2}>
+                      <AtSignIcon boxSize={5} />
+                      <Text>123 Pizza Street, Italian Quarter</Text>
+                    </Flex>
+                    <Flex align="center" gap={2}>
+                      <TimeIcon boxSize={5} />
+                      <Text>Open Daily: 11AM - 10PM</Text>
+                    </Flex>
+                  </Flex>
+                </GridItem>
+
+                {/* Quick Links */}
+                <GridItem>
+                  <Heading size="md" mb={4} color="red.400">Quick Links</Heading>
+                  <Flex direction="column" gap={2}>
+                    <ChakraLink as={Link} to="/" color="gray.300" _hover={{ color: "red.400" }}>
+                      Place an Order
+                    </ChakraLink>
+                    <ChakraLink as={Link} to="/status" color="gray.300" _hover={{ color: "red.400" }}>
+                      Track Your Order
+                    </ChakraLink>
+                    <ChakraLink href="#" color="gray.300" _hover={{ color: "red.400" }}>
+                      Menu
+                    </ChakraLink>
+                    <ChakraLink href="#" color="gray.300" _hover={{ color: "red.400" }}>
+                      Careers
+                    </ChakraLink>
+                  </Flex>
+                </GridItem>
+              </Grid>
+
+              {/* Copyright */}
+              <Box borderTop="1px" borderColor="gray.700" mt={8} pt={8} textAlign="center">
+                <Text color="gray.400">
+                  © {new Date().getFullYear()} Tony's Pizza. All rights reserved.
+                </Text>
+              </Box>
+            </Container>
+          </Box>
         </Box>
       </Router>
     </ChakraProvider>
