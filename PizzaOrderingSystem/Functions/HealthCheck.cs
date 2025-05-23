@@ -11,18 +11,22 @@ namespace azure_durable_functions.PizzaOrderingSystem.Functions
     public static class HealthCheck
     {
         [FunctionName("HealthCheck")]
-        public static async Task<IActionResult> Run(
+        public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequest req,
-            ILogger log)
+            ILogger log
+        )
         {
             log.LogInformation("Health check endpoint called.");
 
-            return new OkObjectResult(new { 
-                status = "healthy", 
-                timestamp = DateTime.UtcNow,
-                message = "Pizza Ordering System is running",
-                endpoint = "health"
-            });
+            return new OkObjectResult(
+                new
+                {
+                    status = "healthy",
+                    timestamp = DateTime.UtcNow,
+                    message = "Pizza Ordering System is running",
+                    endpoint = "health",
+                }
+            );
         }
     }
-} 
+}

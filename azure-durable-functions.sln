@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "azure-durable-functions", "azure-durable-functions.csproj", "{BD3F4041-DB2B-DD67-30F1-E4B549AF9967}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD3F4041-DB2B-DD67-30F1-E4B549AF9967}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD3F4041-DB2B-DD67-30F1-E4B549AF9967}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD3F4041-DB2B-DD67-30F1-E4B549AF9967}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD3F4041-DB2B-DD67-30F1-E4B549AF9967}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3CCFC12E-C163-4362-BAE0-421CEACC19CC}
+	EndGlobalSection
+EndGlobal

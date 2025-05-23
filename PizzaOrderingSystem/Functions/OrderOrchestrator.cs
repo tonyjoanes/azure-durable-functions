@@ -1,61 +1,150 @@
 using System;
 using System.Threading.Tasks;
+using AzureDurableFunctions.PizzaOrderingSystem.Models;
+using AzureDurableFunctions.PizzaOrderingSystem.Services;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
-namespace azure_durable_functions.PizzaOrderingSystem.Functions
+namespace AzureDurableFunctions.PizzaOrderingSystem.Functions
 {
-    public static class OrderOrchestrator
+    public class OrderOrchestrator
     {
-        [FunctionName("OrderOrchestrator")]
-        public static async Task<string> RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context,
-            ILogger log)
+        private readonly IOrderService _orderService;
+        private readonly ILogger<OrderOrchestrator> _logger;
+
+        public OrderOrchestrator(IOrderService orderService, ILogger<OrderOrchestrator> logger)
         {
-            log.LogInformation("Starting pizza order orchestration.");
+            _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
-            // Get the order data from input and convert to JObject for consistent handling
-            var orderInput = context.GetInput<JObject>();
-            log.LogInformation($"Order data received: {orderInput}");
+        [FunctionName("OrderOrchestrator")]
+        public async Task<string> RunOrchestrator(
+            [OrchestrationTrigger] IDurableOrchestrationContext context
+        )
+        {
+            var correlationId = context.InstanceId;
+            _logger.LogInformation(
+                "Starting pizza order orchestration. CorrelationId: {CorrelationId}",
+                correlationId
+            );
 
-            // Step 1: Submit the order with actual order data
-            var orderId = await context.CallActivityAsync<string>("SubmitOrder", orderInput);
-
-            // Step 2: Wait for order confirmation
-            log.LogInformation($"Waiting for confirmation of order {orderId}.");
-            var confirmationResult = await context.WaitForExternalEvent<bool>("OrderConfirmation");
-
-            if (!confirmationResult)
+            try
             {
-                log.LogInformation($"Order {orderId} was rejected.");
-                return $"Order {orderId} was rejected by the user.";
+                // Get the order data from input
+                var order = context.GetInput<PizzaOrder>();
+                _logger.LogInformation("Order data received for order {OrderId}", order.OrderId);
+
+                // Step 1: Submit the order
+                var submitResult = await context.CallActivityWithRetryAsync<OrderResult>(
+                    "SubmitOrder",
+                    new RetryOptions(TimeSpan.FromSeconds(5), 3),
+                    order
+                );
+
+                if (!submitResult.IsSuccess())
+                {
+                    _logger.LogError(
+                        "Order submission failed: {Message}",
+                        submitResult.GetMessage()
+                    );
+                    return submitResult.GetMessage();
+                }
+
+                // Step 2: Wait for order confirmation
+                _logger.LogInformation(
+                    "Waiting for confirmation of order {OrderId}",
+                    order.OrderId
+                );
+                var confirmationResult = await context.WaitForExternalEvent<bool>(
+                    "OrderConfirmation"
+                );
+
+                if (!confirmationResult)
+                {
+                    _logger.LogInformation("Order {OrderId} was rejected", order.OrderId);
+                    return $"Order {order.OrderId} was rejected by the user.";
+                }
+
+                _logger.LogInformation(
+                    "Order {OrderId} was confirmed. Proceeding with payment",
+                    order.OrderId
+                );
+
+                // Step 3: Process payment
+                var paymentResult = await context.CallActivityWithRetryAsync<OrderResult>(
+                    "ProcessPayment",
+                    new RetryOptions(TimeSpan.FromSeconds(5), 3),
+                    order.OrderId
+                );
+
+                if (!paymentResult.IsSuccess())
+                {
+                    _logger.LogError("Payment failed: {Message}", paymentResult.GetMessage());
+                    return paymentResult.GetMessage();
+                }
+
+                // Step 4: Prepare the pizza in the kitchen
+                var kitchenResult = await context.CallActivityWithRetryAsync<OrderResult>(
+                    "PreparePizza",
+                    new RetryOptions(TimeSpan.FromSeconds(5), 3),
+                    order.OrderId
+                );
+
+                if (!kitchenResult.IsSuccess())
+                {
+                    _logger.LogError(
+                        "Pizza preparation failed: {Message}",
+                        kitchenResult.GetMessage()
+                    );
+                    return kitchenResult.GetMessage();
+                }
+
+                // Step 5: Update delivery status
+                var deliveryResult = await context.CallActivityWithRetryAsync<OrderResult>(
+                    "UpdateDeliveryStatus",
+                    new RetryOptions(TimeSpan.FromSeconds(5), 3),
+                    order.OrderId
+                );
+
+                if (!deliveryResult.IsSuccess())
+                {
+                    _logger.LogError(
+                        "Delivery update failed: {Message}",
+                        deliveryResult.GetMessage()
+                    );
+                    return deliveryResult.GetMessage();
+                }
+
+                // Step 6: Complete the order
+                var completionResult = await context.CallActivityWithRetryAsync<OrderResult>(
+                    "CompleteOrder",
+                    new RetryOptions(TimeSpan.FromSeconds(5), 3),
+                    order.OrderId
+                );
+
+                if (!completionResult.IsSuccess())
+                {
+                    _logger.LogError(
+                        "Order completion failed: {Message}",
+                        completionResult.GetMessage()
+                    );
+                    return completionResult.GetMessage();
+                }
+
+                return completionResult.GetMessage();
             }
-
-            log.LogInformation($"Order {orderId} was confirmed. Proceeding with payment.");
-
-            // Step 3: Process payment
-            var paymentResult = await context.CallActivityAsync<bool>("ProcessPayment", orderId);
-            if (!paymentResult)
+            catch (Exception ex)
             {
-                log.LogError($"Payment failed for order {orderId}.");
-                return $"Order {orderId} failed due to payment issues.";
+                _logger.LogError(
+                    ex,
+                    "Error processing order. CorrelationId: {CorrelationId}",
+                    correlationId
+                );
+                throw;
             }
-
-            // Step 4: Prepare the pizza in the kitchen
-            var kitchenResult = await context.CallActivityAsync<string>("PreparePizza", orderId);
-            log.LogInformation($"Kitchen result: {kitchenResult}");
-
-            // Step 5: Update delivery status
-            var deliveryStatus = await context.CallActivityAsync<string>("UpdateDeliveryStatus", orderId);
-            log.LogInformation($"Delivery status: {deliveryStatus}");
-
-            // Step 6: Complete the order
-            var completionResult = await context.CallActivityAsync<string>("CompleteOrder", orderId);
-            log.LogInformation($"Order completion: {completionResult}");
-
-            return $"Order {orderId} completed successfully!";
         }
     }
 }

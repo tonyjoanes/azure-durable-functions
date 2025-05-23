@@ -1,42 +1,33 @@
 using System;
 using System.Threading.Tasks;
+using AzureDurableFunctions.PizzaOrderingSystem.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace AzureDurableFunctions.PizzaOrderingSystem.Functions
 {
     public static class OrderSubmissionActivity
     {
         [FunctionName("SubmitOrder")]
-        public static async Task<string> SubmitOrder(
-            [ActivityTrigger] JObject orderData,
-            ILogger log)
+        public static async Task<OrderResult> SubmitOrder(
+            [ActivityTrigger] PizzaOrder order,
+            ILogger log
+        )
         {
-            // Log the detailed order information
-            if (orderData != null)
+            log.LogInformation("Submitting order {OrderId}", order.OrderId);
+
+            try
             {
-                log.LogInformation($"Submitting order with details:");
-                log.LogInformation($"Size: {orderData["size"]}");
-                log.LogInformation($"Toppings: {orderData["toppings"]}");
-                log.LogInformation($"Address: {orderData["address"]}");
-                log.LogInformation($"Phone: {orderData["phone"]}");
+                // Simulate some processing time
+                await Task.Delay(1000);
+                return new OrderSubmitted { OrderId = order.OrderId, Message = "Order submitted successfully" };
             }
-            else
+            catch (Exception ex)
             {
-                log.LogWarning("Order data is null");
+                log.LogError(ex, "Error submitting order {OrderId}", order.OrderId);
+                return new OrderError { OrderId = order.OrderId, ErrorMessage = "Failed to submit order", Exception = ex };
             }
-
-            // Simulate order submission
-            await Task.Delay(1000); // Simulate a delay
-
-            // Generate a unique order ID (for demo purposes)
-            string orderId = Guid.NewGuid().ToString();
-
-            log.LogInformation($"Order submitted successfully with ID: {orderId}");
-
-            return orderId;
         }
     }
-} 
+}
