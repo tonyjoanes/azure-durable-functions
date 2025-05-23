@@ -49,29 +49,60 @@ namespace azure_durable_functions.PizzaOrderingSystem.Functions
                         string address = "Unknown";
                         string phone = "Unknown";
 
+                        // Log the raw input for debugging
+                        log.LogInformation($"Instance {instance.InstanceId} input: {instance.Input}");
+
                         // Try to extract order details from input
                         if (instance.Input != null)
                         {
                             try
                             {
-                                var inputData = instance.Input.ToObject<dynamic>();
-                                size = inputData?.size?.ToString() ?? size;
-                                address = inputData?.address?.ToString() ?? address;
-                                phone = inputData?.phone?.ToString() ?? phone;
-                                
-                                if (inputData?.toppings != null)
+                                // Try to parse as JObject first
+                                if (instance.Input is JObject inputObj)
                                 {
-                                    var toppingsArray = inputData.toppings as JArray;
-                                    if (toppingsArray != null)
+                                    size = inputObj["size"]?.ToString() ?? size;
+                                    address = inputObj["address"]?.ToString() ?? address;
+                                    phone = inputObj["phone"]?.ToString() ?? phone;
+                                    
+                                    if (inputObj["toppings"] is JArray toppingsArray)
                                     {
                                         toppings = toppingsArray.ToObject<string[]>() ?? toppings;
                                     }
                                 }
+                                else
+                                {
+                                    // Try to convert to dynamic and access properties
+                                    var inputData = instance.Input.ToObject<dynamic>();
+                                    if (inputData != null)
+                                    {
+                                        size = inputData.size?.ToString() ?? size;
+                                        address = inputData.address?.ToString() ?? address;
+                                        phone = inputData.phone?.ToString() ?? phone;
+                                        
+                                        if (inputData.toppings != null)
+                                        {
+                                            if (inputData.toppings is JArray toppingsArray)
+                                            {
+                                                toppings = toppingsArray.ToObject<string[]>() ?? toppings;
+                                            }
+                                            else if (inputData.toppings is IEnumerable<object> toppingsEnum)
+                                            {
+                                                toppings = toppingsEnum.Select(t => t?.ToString()).Where(t => !string.IsNullOrEmpty(t)).ToArray();
+                                            }
+                                        }
+                                    }
+                                }
+
+                                log.LogInformation($"Parsed order details - Size: {size}, Address: {address}, Phone: {phone}, Toppings: [{string.Join(", ", toppings)}]");
                             }
                             catch (Exception ex)
                             {
-                                log.LogWarning($"Failed to parse input for instance {instance.InstanceId}: {ex.Message}");
+                                log.LogWarning($"Failed to parse input for instance {instance.InstanceId}: {ex.Message}. Input: {instance.Input}");
                             }
+                        }
+                        else
+                        {
+                            log.LogWarning($"Instance {instance.InstanceId} has null input");
                         }
 
                         var pendingOrder = new

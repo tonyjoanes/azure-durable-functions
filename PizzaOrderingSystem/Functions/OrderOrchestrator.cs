@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace azure_durable_functions.PizzaOrderingSystem.Functions
 {
@@ -15,8 +16,12 @@ namespace azure_durable_functions.PizzaOrderingSystem.Functions
         {
             log.LogInformation("Starting pizza order orchestration.");
 
-            // Step 1: Submit the order
-            var orderId = await context.CallActivityAsync<string>("SubmitOrder", "Pizza Order");
+            // Get the order data from input and convert to JObject for consistent handling
+            var orderInput = context.GetInput<JObject>();
+            log.LogInformation($"Order data received: {orderInput}");
+
+            // Step 1: Submit the order with actual order data
+            var orderId = await context.CallActivityAsync<string>("SubmitOrder", orderInput);
 
             // Step 2: Wait for order confirmation
             log.LogInformation($"Waiting for confirmation of order {orderId}.");

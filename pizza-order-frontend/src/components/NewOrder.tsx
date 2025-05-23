@@ -5,8 +5,8 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
   VStack,
+  HStack,
   useToast,
   Text,
   Alert,
@@ -14,6 +14,17 @@ import {
   AlertTitle,
   AlertDescription,
   Button as ChakraButton,
+  SimpleGrid,
+  Card,
+  CardBody,
+  Badge,
+  Checkbox,
+  Radio,
+  RadioGroup,
+  Stack,
+  Divider,
+  Heading,
+  Flex,
 } from '@chakra-ui/react';
 import config from '../config';
 
@@ -26,6 +37,23 @@ interface PizzaOrder {
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
+
+const pizzaSizes = [
+  { value: 'small', label: 'Small', price: '$12.99', description: '10" - Perfect for 1-2 people', diameter: '60px' },
+  { value: 'medium', label: 'Medium', price: '$16.99', description: '12" - Great for 2-3 people', diameter: '80px' },
+  { value: 'large', label: 'Large', price: '$20.99', description: '14" - Feeds 3-4 people', diameter: '100px' },
+];
+
+const toppingsOptions = [
+  { value: 'pepperoni', label: 'Pepperoni', emoji: '🍕' },
+  { value: 'mushrooms', label: 'Mushrooms', emoji: '🍄' },
+  { value: 'onions', label: 'Onions', emoji: '🧅' },
+  { value: 'sausage', label: 'Sausage', emoji: '🌭' },
+  { value: 'bacon', label: 'Bacon', emoji: '🥓' },
+  { value: 'extra-cheese', label: 'Extra Cheese', emoji: '🧀' },
+  { value: 'peppers', label: 'Bell Peppers', emoji: '🫑' },
+  { value: 'olives', label: 'Black Olives', emoji: '🫒' },
+];
 
 const NewOrder: React.FC = () => {
   const [order, setOrder] = useState<PizzaOrder>({
@@ -49,13 +77,12 @@ const NewOrder: React.FC = () => {
       });
       setBackendAvailable(response.ok);
       if (response.ok) {
-        setRetryCount(0); // Reset retry count on success
+        setRetryCount(0);
       }
     } catch (error) {
       console.error('Backend health check failed:', error);
       setBackendAvailable(false);
       
-      // Implement retry logic
       if (retryCount < MAX_RETRIES) {
         setTimeout(() => {
           setRetryCount(prev => prev + 1);
@@ -64,7 +91,6 @@ const NewOrder: React.FC = () => {
     }
   };
 
-  // Check backend availability on component mount and when retry count changes
   useEffect(() => {
     checkBackend();
   }, [retryCount]);
@@ -90,14 +116,13 @@ const NewOrder: React.FC = () => {
       const data = await response.json();
       
       toast({
-        title: 'Order Placed!',
-        description: `Your order has been submitted. Order ID: ${data.id}`,
+        title: 'Order Placed! 🍕',
+        description: `Your delicious pizza is on the way! Order ID: ${data.id}`,
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
 
-      // Reset form
       setOrder({
         size: '',
         toppings: [],
@@ -107,7 +132,7 @@ const NewOrder: React.FC = () => {
     } catch (error) {
       console.error('Error placing order:', error);
       toast({
-        title: 'Error',
+        title: 'Oops! Something went wrong',
         description: error instanceof Error 
           ? error.message 
           : 'Failed to place order. Please try again.',
@@ -118,6 +143,26 @@ const NewOrder: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToppingChange = (toppingValue: string, isChecked: boolean) => {
+    setOrder(prev => ({
+      ...prev,
+      toppings: isChecked 
+        ? [...prev.toppings, toppingValue]
+        : prev.toppings.filter(t => t !== toppingValue)
+    }));
+  };
+
+  const getSelectedSizeDetails = () => {
+    return pizzaSizes.find(size => size.value === order.size);
+  };
+
+  const calculateTotal = () => {
+    const sizePrice = getSelectedSizeDetails()?.price || '$0.00';
+    const basePrice = parseFloat(sizePrice.replace('$', ''));
+    const toppingsPrice = order.toppings.length * 1.50; // $1.50 per topping
+    return `$${(basePrice + toppingsPrice).toFixed(2)}`;
   };
 
   if (backendAvailable === false) {
@@ -149,72 +194,211 @@ const NewOrder: React.FC = () => {
     );
   }
 
+  const isFormValid = order.size && order.address && order.phone;
+
   return (
     <Box>
-      <Text fontSize="2xl" mb={6}>Place New Order</Text>
-      <form onSubmit={handleSubmit}>
-        <VStack spacing={4} align="stretch">
-          <FormControl isRequired>
-            <FormLabel>Pizza Size</FormLabel>
-            <Select
-              value={order.size}
-              onChange={(e) => setOrder({ ...order, size: e.target.value })}
-              placeholder="Select size"
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </Select>
-          </FormControl>
+      <VStack spacing={8} align="stretch">
+        <Box textAlign="center">
+          <Heading size="xl" color="orange.500" mb={2}>
+            🍕 Craft Your Perfect Pizza
+          </Heading>
+          <Text color="gray.600" fontSize="lg">
+            Fresh ingredients, made to order, delivered hot!
+          </Text>
+        </Box>
 
-          <FormControl isRequired>
-            <FormLabel>Toppings</FormLabel>
-            <Select
-              multiple
-              value={order.toppings}
-              onChange={(e) => {
-                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                setOrder({ ...order, toppings: selectedOptions });
-              }}
-            >
-              <option value="pepperoni">Pepperoni</option>
-              <option value="mushrooms">Mushrooms</option>
-              <option value="onions">Onions</option>
-              <option value="sausage">Sausage</option>
-              <option value="bacon">Bacon</option>
-              <option value="extra-cheese">Extra Cheese</option>
-            </Select>
-          </FormControl>
+        <form onSubmit={handleSubmit}>
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
+            {/* Left Column - Pizza Configuration */}
+            <VStack spacing={6} align="stretch">
+              
+              {/* Size Selection */}
+              <Card>
+                <CardBody>
+                  <FormControl isRequired>
+                    <FormLabel fontSize="lg" fontWeight="bold" color="gray.700" mb={4}>
+                      Choose Your Size
+                    </FormLabel>
+                    <RadioGroup value={order.size} onChange={(value) => setOrder({ ...order, size: value })}>
+                      <VStack spacing={4} align="stretch">
+                        {pizzaSizes.map((size) => (
+                          <Box key={size.value}>
+                            <Radio value={size.value} colorScheme="orange">
+                              <HStack spacing={4} align="center">
+                                <Box
+                                  width={size.diameter}
+                                  height={size.diameter}
+                                  borderRadius="50%"
+                                  bg="orange.100"
+                                  border="3px solid"
+                                  borderColor={order.size === size.value ? "orange.500" : "orange.200"}
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  transition="all 0.2s"
+                                >
+                                  <Text fontSize="2xl">🍕</Text>
+                                </Box>
+                                <Box>
+                                  <Text fontWeight="bold">{size.label}</Text>
+                                  <Text fontSize="sm" color="gray.600">{size.description}</Text>
+                                  <Badge colorScheme="green" variant="subtle">{size.price}</Badge>
+                                </Box>
+                              </HStack>
+                            </Radio>
+                          </Box>
+                        ))}
+                      </VStack>
+                    </RadioGroup>
+                  </FormControl>
+                </CardBody>
+              </Card>
 
-          <FormControl isRequired>
-            <FormLabel>Delivery Address</FormLabel>
-            <Input
-              value={order.address}
-              onChange={(e) => setOrder({ ...order, address: e.target.value })}
-              placeholder="Enter delivery address"
-            />
-          </FormControl>
+              {/* Toppings Selection */}
+              <Card>
+                <CardBody>
+                  <FormControl>
+                    <FormLabel fontSize="lg" fontWeight="bold" color="gray.700" mb={4}>
+                      Select Your Toppings
+                      <Badge ml={2} colorScheme="blue" variant="subtle">+$1.50 each</Badge>
+                    </FormLabel>
+                    <SimpleGrid columns={2} spacing={3}>
+                      {toppingsOptions.map((topping) => (
+                        <Box key={topping.value}>
+                          <Checkbox
+                            isChecked={order.toppings.includes(topping.value)}
+                            onChange={(e) => handleToppingChange(topping.value, e.target.checked)}
+                            colorScheme="orange"
+                          >
+                            <HStack spacing={2}>
+                              <Text fontSize="lg">{topping.emoji}</Text>
+                              <Text fontSize="sm">{topping.label}</Text>
+                            </HStack>
+                          </Checkbox>
+                        </Box>
+                      ))}
+                    </SimpleGrid>
+                  </FormControl>
+                </CardBody>
+              </Card>
 
-          <FormControl isRequired>
-            <FormLabel>Phone Number</FormLabel>
-            <Input
-              value={order.phone}
-              onChange={(e) => setOrder({ ...order, phone: e.target.value })}
-              placeholder="Enter phone number"
-              type="tel"
-            />
-          </FormControl>
+              {/* Delivery Information */}
+              <Card>
+                <CardBody>
+                  <FormLabel fontSize="lg" fontWeight="bold" color="gray.700" mb={4}>
+                    Delivery Information
+                  </FormLabel>
+                  <VStack spacing={4}>
+                    <FormControl isRequired>
+                      <FormLabel>
+                        <Text as="span" mr={2}>📍</Text>
+                        Delivery Address
+                      </FormLabel>
+                      <Input
+                        value={order.address}
+                        onChange={(e) => setOrder({ ...order, address: e.target.value })}
+                        placeholder="123 Main Street, City, State 12345"
+                        focusBorderColor="orange.400"
+                      />
+                    </FormControl>
 
-          <Button
-            type="submit"
-            colorScheme="blue"
-            isLoading={loading}
-            loadingText="Placing Order..."
-          >
-            Place Order
-          </Button>
-        </VStack>
-      </form>
+                    <FormControl isRequired>
+                      <FormLabel>
+                        <Text as="span" mr={2}>📞</Text>
+                        Phone Number
+                      </FormLabel>
+                      <Input
+                        value={order.phone}
+                        onChange={(e) => setOrder({ ...order, phone: e.target.value })}
+                        placeholder="(555) 123-4567"
+                        type="tel"
+                        focusBorderColor="orange.400"
+                      />
+                    </FormControl>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </VStack>
+
+            {/* Right Column - Order Summary */}
+            <VStack spacing={6} align="stretch">
+              <Card bg="gray.50" borderColor="orange.200" borderWidth="2px">
+                <CardBody>
+                  <Heading size="md" mb={4} color="gray.700">
+                    Order Summary
+                  </Heading>
+                  
+                  {order.size ? (
+                    <VStack spacing={3} align="stretch">
+                      <Box>
+                        <Text fontWeight="bold">Size: {getSelectedSizeDetails()?.label}</Text>
+                        <Text fontSize="sm" color="gray.600">{getSelectedSizeDetails()?.description}</Text>
+                        <Text color="green.600" fontWeight="bold">{getSelectedSizeDetails()?.price}</Text>
+                      </Box>
+                      
+                      <Divider />
+                      
+                      <Box>
+                        <Text fontWeight="bold">Toppings ({order.toppings.length}):</Text>
+                        {order.toppings.length > 0 ? (
+                          <VStack align="start" spacing={1}>
+                            {order.toppings.map(topping => {
+                              const toppingInfo = toppingsOptions.find(t => t.value === topping);
+                              return (
+                                <HStack key={topping} spacing={2}>
+                                  <Text fontSize="sm">{toppingInfo?.emoji}</Text>
+                                  <Text fontSize="sm">{toppingInfo?.label}</Text>
+                                  <Text fontSize="sm" color="green.600">+$1.50</Text>
+                                </HStack>
+                              );
+                            })}
+                          </VStack>
+                        ) : (
+                          <Text fontSize="sm" color="gray.500">No toppings selected</Text>
+                        )}
+                      </Box>
+                      
+                      <Divider />
+                      
+                      <Box>
+                        <HStack justify="space-between">
+                          <Text fontWeight="bold" fontSize="lg">Total:</Text>
+                          <Text fontWeight="bold" fontSize="lg" color="green.600">{calculateTotal()}</Text>
+                        </HStack>
+                      </Box>
+                    </VStack>
+                  ) : (
+                    <Text color="gray.500" textAlign="center">
+                      Select a pizza size to see your order summary
+                    </Text>
+                  )}
+                </CardBody>
+              </Card>
+
+              <Button
+                type="submit"
+                colorScheme="orange"
+                size="lg"
+                height="60px"
+                fontSize="lg"
+                isLoading={loading}
+                loadingText="Placing Your Order..."
+                isDisabled={!isFormValid}
+                leftIcon={<Text>✅</Text>}
+              >
+                Place Order - {order.size ? calculateTotal() : '$0.00'}
+              </Button>
+
+              {!isFormValid && (
+                <Text fontSize="sm" color="gray.500" textAlign="center">
+                  Please fill in all required fields to place your order
+                </Text>
+              )}
+            </VStack>
+          </SimpleGrid>
+        </form>
+      </VStack>
     </Box>
   );
 };
