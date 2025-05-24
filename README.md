@@ -162,4 +162,18 @@ const config = {
 - [ ] Create kitchen preparation workflow
 - [ ] Implement delivery tracking
 - [ ] Add human approval steps
-- [ ] Implement error handling and retries
+- [x] Implement error handling and retries
+
+## Screenshots
+
+### Pizza Order Form
+![Pizza Order Form](screenshots/pizza-order-form.png)
+*Figure 1: The pizza order form lets users choose size, toppings, and delivery details.*
+
+### Pending Orders
+![Pending Orders](screenshots/pending-orders.png)
+*Figure 2: Pending orders are shown with details and a confirmation button, demonstrating human-in-the-loop orchestration.*
+
+### Orchestration Logs
+![Orchestration Logs](screenshots/orchestration-logs.png)
+*Figure 3: Logs show each orchestration step, including order submission, payment, pizza preparation, delivery update, and completion.*
