@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Text,
@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import config from '../config';
 
-interface OrderStatus {
+interface OrderStatusData {
   id: string;
   status: string;
   size: string;
@@ -26,7 +26,7 @@ interface OrderStatus {
 
 const OrderStatus: React.FC = () => {
   const [orderId, setOrderId] = useState<string>('');
-  const [order, setOrder] = useState<OrderStatus | null>(null);
+  const [order, setOrder] = useState<OrderStatusData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();

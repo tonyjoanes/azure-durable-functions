@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -67,7 +67,7 @@ const NewOrder: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const toast = useToast();
 
-  const checkBackend = async () => {
+  const checkBackend = useCallback(async () => {
     try {
       const response = await fetch(`${config.apiBaseUrl}${config.apiEndpoints.health}`, {
         method: 'GET',
@@ -89,11 +89,11 @@ const NewOrder: React.FC = () => {
         }, RETRY_DELAY);
       }
     }
-  };
+  }, [retryCount]);
 
   useEffect(() => {
     checkBackend();
-  }, [retryCount]);
+  }, [checkBackend]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
