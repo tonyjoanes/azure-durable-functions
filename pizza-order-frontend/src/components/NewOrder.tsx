@@ -21,10 +21,8 @@ import {
   Checkbox,
   Radio,
   RadioGroup,
-  Stack,
   Divider,
   Heading,
-  Flex,
 } from '@chakra-ui/react';
 import config from '../config';
 
